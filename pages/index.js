@@ -1,36 +1,7 @@
 import appConfig from '../config.json';
+import { useEffect, useState } from 'react'
 import { Box, Button, Text, TextField, Image } from '@skynexui/components';
-
-function GlobalStyle() {
-    return (
-        <style global jsx>{`
-            *{
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                list-style: none;
-            }
-
-            body{
-                font-family: 'Open Sans', sans-serif;
-            }
-
-            /* App fit Height */ 
-            html, body, #__next {
-                min-height: 100vh;
-                display: flex;
-                flex: 1;
-            }
-            #__next {
-                flex: 1;
-            }
-            #__next > * {
-                flex: 1;
-            }
-            /* ./App fit Height */ 
-        `}</style>
-    )
-}
+import { useRouter } from 'next/router'
 
 function Title(element) {
     const children = element.children
@@ -51,11 +22,20 @@ function Title(element) {
 }
 
 export default function HomePage() {
-    const username = 'Hklug001';
+    const [username, setUsername] = useState('')
+    const [name, setName] = useState('')
+    const router = useRouter()
+
+    useEffect(() => {
+        username ?
+            fetch(`https://api.github.com/users/${username}`)
+                .then(response => response.json())
+                .then(data => setName(data.name))
+            : setName('')
+    });
 
     return (
         <>
-            <GlobalStyle />
             <Box
                 styleSheet={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -80,6 +60,10 @@ export default function HomePage() {
                 >
                     {/* Formulário */}
                     <Box
+                        onSubmit={function (event) {
+                            event.preventDefault();
+                            router.push('/chat')
+                        }}
                         as="form"
                         styleSheet={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -87,12 +71,14 @@ export default function HomePage() {
                         }}
                     >
                         <Title tag="h2">Seja bem Vindo!</Title>
+                        <Title>{name}</Title>
                         <Text variant="body3" styleSheet={{ marginBottom: '32px', color: appConfig.theme.colors.neutrals[300] }}>
                             {appConfig.name}
                         </Text>
 
                         <TextField
                             fullWidth
+                            placeholder='GitHub username'
                             textFieldColors={{
                                 neutral: {
                                     textColor: appConfig.theme.colors.neutrals[200],
@@ -101,9 +87,13 @@ export default function HomePage() {
                                     backgroundColor: appConfig.theme.colors.neutrals[800],
                                 },
                             }}
+                            onChange={function (event) {
+                                setUsername(event.target.value);
+                            }}
+
                         />
                         <Button
-                            type='submit'
+                            type={username.length > 2 ? 'submit' : ''}
                             label='Entrar'
                             fullWidth
                             buttonColors={{
@@ -138,7 +128,8 @@ export default function HomePage() {
                                 borderRadius: '50%',
                                 marginBottom: '16px',
                             }}
-                            src={`https://github.com/${username}.png`}
+                            src={username.length > 2 ? `https://github.com/${username}.png` : `https://avatarfiles.alphacoders.com/168/thumb-1920-168291.png`}
+
                         />
                         <Text
                             variant="body4"
@@ -149,7 +140,7 @@ export default function HomePage() {
                                 borderRadius: '1000px'
                             }}
                         >
-                            {username}
+                            {username.length > 2 ? username : 'New Recruit'}
                         </Text>
                     </Box>
                     {/* Photo Area */}
