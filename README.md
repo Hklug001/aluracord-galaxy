@@ -1,0 +1,3 @@
+# Welcome to Aluracord, a discord from the galaxies!
+
+work in progress...
