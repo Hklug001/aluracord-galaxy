@@ -77,6 +77,9 @@ export default function HomePage() {
                         </Text>
 
                         <TextField
+                            onChange={(event) => {
+                                setUsername(event.target.value);
+                            }}
                             fullWidth
                             placeholder='GitHub username'
                             textFieldColors={{
@@ -86,9 +89,6 @@ export default function HomePage() {
                                     mainColorHighlight: appConfig.theme.colors.other['light-blue'],
                                     backgroundColor: appConfig.theme.colors.neutrals[800],
                                 },
-                            }}
-                            onChange={function (event) {
-                                setUsername(event.target.value);
                             }}
 
                         />
