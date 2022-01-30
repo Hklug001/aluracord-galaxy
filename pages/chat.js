@@ -12,16 +12,18 @@ const SUPABASE_URL = 'https://ezptpsxxcksineiwjlhr.supabase.co'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 
+function live(set) {
+    supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
+        set(data);
+    })
+}
+
 export default function ChatPage() {
     const [message, setMessage] = React.useState('');
     const [messages, setMessages] = React.useState([]);
 
+    live(setMessages);
 
-    React.useState(() => {
-        supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
-            setMessages(data);
-        })
-    }, [messages])
 
     function handleNewMessage(newMessage) {
         const message = {
@@ -153,13 +155,6 @@ function Header() {
 function MessageList(props) {
     const router = useRouter()
 
-    function updateMessages() {
-        supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
-            props.setArray(data);
-        })
-    }
-
-
     return (
         <Box
             tag="ul"
@@ -229,7 +224,7 @@ function MessageList(props) {
                                 event.preventDefault();
                                 try {
                                     await supabase.from('messages').delete().eq('id', message.id)
-                                    updateMessages();
+                                    live(props.setArray)
                                 } catch (error) {
                                     console.log(error)
                                 }
