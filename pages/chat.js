@@ -3,16 +3,14 @@ import React from 'react';
 import appConfig from '../config.json';
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/router'
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLevelUp, faTrashCan } from "@fortawesome/free-solid-svg-icons";
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTimes, faPaperPlane, faRocket } from '@fortawesome/free-solid-svg-icons';
 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzQ5MzM4MywiZXhwIjoxOTU5MDY5MzgzfQ.5vxekwOf2Uhft1qjVQRThbcLLJAnIV1G1_i12P_m7QA'
 const SUPABASE_URL = 'https://ezptpsxxcksineiwjlhr.supabase.co'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-function deleteMessage(messages, message) {
-    return messages.filter((element) => { element == message })
-}
 
 export default function ChatPage() {
     const [message, setMessage] = React.useState('');
@@ -44,7 +42,7 @@ export default function ChatPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backgroundImage: `url(https://wallpaperaccess.com/full/39608.jpg)`,
                 backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundBlendMode: 'multiply',
-                color: appConfig.theme.colors.neutrals['000']
+                color: appConfig.theme.colors.neutrals['000'],
             }}
         >
             <Box
@@ -59,6 +57,7 @@ export default function ChatPage() {
                     maxWidth: '95%',
                     maxHeight: '95vh',
                     padding: '32px',
+                    opacity: '0.95'
                 }}
             >
                 <Header />
@@ -81,7 +80,8 @@ export default function ChatPage() {
                         as="form"
                         styleSheet={{
                             display: 'flex',
-                            alignItems: 'center',
+
+
                         }}
                     >
                         <TextField
@@ -104,11 +104,10 @@ export default function ChatPage() {
                                 borderRadius: '5px',
                                 padding: '6px 8px',
                                 backgroundColor: appConfig.theme.colors.neutrals[800],
-                                marginRight: '12px',
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
                         />
-                        <Button
+                        <FontAwesomeIcon icon={faRocket}
                             onClick={(event) => {
                                 event.preventDefault();
                                 if (message != '') {
@@ -116,13 +115,13 @@ export default function ChatPage() {
                                 }
                             }
                             }
-                            label='send'
 
-                            buttonColors={{
-                                contrastColor: appConfig.theme.colors.neutrals["000"],
-                                mainColor: appConfig.theme.colors.other['light-blue'],
-                                mainColorLight: appConfig.theme.colors.primary[400],
-                                mainColorStrong: appConfig.theme.colors.neutrals['500'],
+                            style={{
+                                cursor: 'pointer',
+                                color: '#59bfff',
+                                width: '5%',
+                                height: '50%',
+                                marginTop: '6px'
                             }}
 
                         />
@@ -154,15 +153,18 @@ function Header() {
 function MessageList(props) {
     const router = useRouter()
 
-    function removeMessage(id) {
-        props.setArray(props.messages, filter((message) => { message.id !== id }))
+    function updateMessages() {
+        supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
+            props.setArray(data);
+        })
     }
+
 
     return (
         <Box
             tag="ul"
             styleSheet={{
-                overflow: 'scroll',
+                overflowY: 'scroll',
                 display: 'flex',
                 flexDirection: 'column-reverse',
                 flex: 1,
@@ -189,6 +191,8 @@ function MessageList(props) {
                         <Box
                             styleSheet={{
                                 marginBottom: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
                             }}
                         >
                             <Image
@@ -197,12 +201,14 @@ function MessageList(props) {
                                     router.push(`https://github.com/${message.user}`)
                                 }}
                                 styleSheet={{
-                                    width: '20px',
-                                    height: '20px',
+                                    width: '30px',
+                                    height: '30px',
                                     borderRadius: '50%',
                                     display: 'inline-block',
                                     marginRight: '8px',
-
+                                    hover: {
+                                        transform: 'scale(1.25)',
+                                    }
                                 }}
                                 src={`https://github.com/${message.user}.png`}
                             />
@@ -212,20 +218,29 @@ function MessageList(props) {
                             <Text
                                 styleSheet={{
                                     fontSize: '10px',
-                                    marginLeft: '8px',
+                                    margin: '0px 8px',
                                     color: appConfig.theme.colors.neutrals[300],
                                 }}
                                 tag="span"
                             >
                                 {(new Date().toLocaleDateString())}
                             </Text>
+                            <FontAwesomeIcon className="fas fa-times" icon={faTimes} onClick={async (event) => {
+                                event.preventDefault();
+                                try {
+                                    await supabase.from('messages').delete().eq('id', message.id)
+                                    updateMessages();
+                                } catch (error) {
+                                    console.log(error)
+                                }
+                            }}
+                                style={{
+                                    cursor: 'pointer',
+                                    color: '#F08080'
+                                }}
+                            />
                         </Box>
                         {message.text}
-
-                        <FontAwesomeIcon className='iconTrash' icon={faTrashCan} onClick={(event) => {
-                            event.preventDefault();
-                            removeMessage(message.id)
-                        }} />
                     </Text>
                 )
             })}

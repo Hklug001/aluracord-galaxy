@@ -82,7 +82,7 @@ export default function HomePage() {
                                 setUsername(event.target.value);
                             }}
                             fullWidth
-                            placeholder='GitHub username'
+                            placeholder='Seu github...'
                             textFieldColors={{
                                 neutral: {
                                     textColor: appConfig.theme.colors.neutrals[200],

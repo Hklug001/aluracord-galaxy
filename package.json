@@ -13,6 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^5.15.4",
+    "@fortawesome/react-fontawesome": "^0.1.17",
     "@skynexui/components": "^1.23.5",
     "@supabase/supabase-js": "^1.29.4",
     "next": "^12.0.8",
