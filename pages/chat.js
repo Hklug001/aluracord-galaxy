@@ -1,22 +1,42 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
-import Link from 'next/link';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+import { useRouter } from 'next/router'
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faLevelUp, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzQ5MzM4MywiZXhwIjoxOTU5MDY5MzgzfQ.5vxekwOf2Uhft1qjVQRThbcLLJAnIV1G1_i12P_m7QA'
+const SUPABASE_URL = 'https://ezptpsxxcksineiwjlhr.supabase.co'
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+function deleteMessage(messages, message) {
+    return messages.filter((element) => { element == message })
+}
 
 export default function ChatPage() {
     const [message, setMessage] = React.useState('');
     const [messages, setMessages] = React.useState([]);
 
+
+    React.useState(() => {
+        supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
+            setMessages(data);
+        })
+    }, [messages])
+
     function handleNewMessage(newMessage) {
-        const formatMessage = {
-            id: messages.length,
+        const message = {
             text: newMessage,
-            user: 'Hklug001',
+            user: localStorage.getItem('username'),
         }
-        setMessages([formatMessage, ...messages]);
+        supabase.from('messages').insert([message]).then(({ data }) => {
+            setMessages([data[0], ...messages]);
+        })
+
         setMessage('');
     }
+
 
     return (
         <Box
@@ -55,7 +75,7 @@ export default function ChatPage() {
                     }}
                 >
 
-                    <MessageList messages={messages} />
+                    <MessageList messages={messages} setArray={setMessages} />
 
                     <Box
                         as="form"
@@ -131,8 +151,12 @@ function Header() {
     )
 }
 
-function MessageList(props, set) {
-    console.log('MessageList', props);
+function MessageList(props) {
+    const router = useRouter()
+
+    function removeMessage(id) {
+        props.setArray(props.messages, filter((message) => { message.id !== id }))
+    }
 
     return (
         <Box
@@ -168,12 +192,17 @@ function MessageList(props, set) {
                             }}
                         >
                             <Image
+                                onClick={(event) => {
+                                    event.preventDefault()
+                                    router.push(`https://github.com/${message.user}`)
+                                }}
                                 styleSheet={{
                                     width: '20px',
                                     height: '20px',
                                     borderRadius: '50%',
                                     display: 'inline-block',
                                     marginRight: '8px',
+
                                 }}
                                 src={`https://github.com/${message.user}.png`}
                             />
@@ -192,16 +221,11 @@ function MessageList(props, set) {
                             </Text>
                         </Box>
                         {message.text}
-                        {/*<Button
-                            onClick={
-                                set(props.messages.filter((element) => {
-                                    element.id !== message.id
-                                }
-                                ))
-                            }
-                        >
-                            X
-                        </Button>*/}
+
+                        <FontAwesomeIcon className='iconTrash' icon={faTrashCan} onClick={(event) => {
+                            event.preventDefault();
+                            removeMessage(message.id)
+                        }} />
                     </Text>
                 )
             })}

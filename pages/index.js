@@ -31,7 +31,7 @@ export default function HomePage() {
             fetch(`https://api.github.com/users/${username}`)
                 .then(response => response.json())
                 .then(data => setName(data.name))
-            : setName('')
+            : setName('');
     });
 
     return (
@@ -62,7 +62,8 @@ export default function HomePage() {
                     <Box
                         onSubmit={function (event) {
                             event.preventDefault();
-                            router.push('/chat')
+                            localStorage.setItem('username', username)
+                            router.push(`/chat`)
                         }}
                         as="form"
                         styleSheet={{
