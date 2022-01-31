@@ -12,28 +12,33 @@ const SUPABASE_URL = 'https://ezptpsxxcksineiwjlhr.supabase.co'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 
-function live(set) {
-    supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
-        set(data);
-    })
-}
-
 export default function ChatPage() {
     const [message, setMessage] = React.useState('');
     const [messages, setMessages] = React.useState([]);
 
-    live(setMessages);
+    React.useEffect(() => {
+        supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
+            setMessages(data);
+        })
+    }, [])
 
+    supabase
+        .from('messages')
+        .on('INSERT', (newMessage) => {
+            setMessages([newMessage.new, ...messages]);
+        })
+        .on('DELETE', (del) => {
+            const newArray = messages.filter((msg) => msg.id !== del.old.id)
+            setMessages(newArray)
+        })
+        .subscribe();
 
     function handleNewMessage(newMessage) {
         const message = {
             text: newMessage,
             user: localStorage.getItem('username'),
         }
-        supabase.from('messages').insert([message]).then(({ data }) => {
-            setMessages([data[0], ...messages]);
-        })
-
+        supabase.from('messages').insert([message]).then()
         setMessage('');
     }
 
@@ -76,7 +81,7 @@ export default function ChatPage() {
                     }}
                 >
 
-                    <MessageList messages={messages} setArray={setMessages} />
+                    <MessageList messages={messages} setMessages={setMessages} />
 
                     <Box
                         as="form"
@@ -155,6 +160,11 @@ function Header() {
 function MessageList(props) {
     const router = useRouter()
 
+    function removeMessage(id) {
+        const messagesFilter = props.messages.filter((message) => { message.id !== id })
+        props.setMessages(messagesFilter)
+    }
+
     return (
         <Box
             tag="ul"
@@ -224,7 +234,6 @@ function MessageList(props) {
                                 event.preventDefault();
                                 try {
                                     await supabase.from('messages').delete().eq('id', message.id)
-                                    live(props.setArray)
                                 } catch (error) {
                                     console.log(error)
                                 }
