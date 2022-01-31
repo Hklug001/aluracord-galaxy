@@ -62,8 +62,7 @@ export default function HomePage() {
                     <Box
                         onSubmit={function (event) {
                             event.preventDefault();
-                            localStorage.setItem('username', username)
-                            router.push(`/chat`)
+                            router.push(`/chat?username=${username}`)
                         }}
                         as="form"
                         styleSheet={{

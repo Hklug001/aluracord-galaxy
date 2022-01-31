@@ -1,8 +1,12 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
+
 import React from 'react';
 import appConfig from '../config.json';
+
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/router'
+
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faPaperPlane, faRocket } from '@fortawesome/free-solid-svg-icons';
@@ -11,32 +15,64 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5v
 const SUPABASE_URL = 'https://ezptpsxxcksineiwjlhr.supabase.co'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+function realtimeInsert(setNewMessages) {
+    return supabase
+        .from('messages')
+        .on('INSERT', (newInsertMessage) => {
+            setNewMessages(newInsertMessage.new);
+        })
+        .subscribe();
+}
+
+function realtimeDelete(setNewMessages) {
+    return supabase
+        .from('messages')
+        .on('DELETE', (oldDeleteMessage) => {
+            setNewMessages(oldDeleteMessage.old);
+        })
+        .subscribe();
+}
+
 
 export default function ChatPage() {
+    const router = useRouter()
     const [message, setMessage] = React.useState('');
     const [messages, setMessages] = React.useState([]);
 
     React.useEffect(() => {
         supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
             setMessages(data);
+            console.log('oi')
         })
+
+        const insertSubscription = realtimeInsert((newMesage) => {
+            setMessages((currentMessages) => {
+                return [
+                    newMesage,
+                    ...currentMessages,
+                ]
+            });
+        });
+
+        /*const deleteSubscription = realtimeDelete((oldMessage) => {
+            setMessages((currentMessages) => {
+                return [
+                    currentMessages.filter((msg) => msg.id !== oldMessage.id)
+                ]
+            });
+        });*/
+
+        return () => {
+            insertSubscription.unsubscribe();
+        }
+
     }, [])
 
-    supabase
-        .from('messages')
-        .on('INSERT', (newMessage) => {
-            setMessages([newMessage.new, ...messages]);
-        })
-        .on('DELETE', (del) => {
-            const newArray = messages.filter((msg) => msg.id !== del.old.id)
-            setMessages(newArray)
-        })
-        .subscribe();
 
     function handleNewMessage(newMessage) {
         const message = {
             text: newMessage,
-            user: localStorage.getItem('username'),
+            user: router.query.username,
         }
         supabase.from('messages').insert([message]).then()
         setMessage('');
@@ -64,7 +100,6 @@ export default function ChatPage() {
                     maxWidth: '95%',
                     maxHeight: '95vh',
                     padding: '32px',
-                    opacity: '0.95'
                 }}
             >
                 <Header />
@@ -74,7 +109,9 @@ export default function ChatPage() {
                         display: 'flex',
                         flex: 1,
                         height: '80%',
-                        backgroundColor: appConfig.theme.colors.neutrals[600],
+                        backgroundImage: `url(https://wallpaperaccess.com/full/39608.jpg)`,
+                        backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundBlendMode: 'multiply',
+                        backgroundColor: 'rgb(41, 51, 61)',
                         flexDirection: 'column',
                         borderRadius: '5px',
                         padding: '16px',
@@ -86,11 +123,50 @@ export default function ChatPage() {
                     <Box
                         as="form"
                         styleSheet={{
-                            display: 'flex',
-
-
+                            position: 'relative'
                         }}
                     >
+                        <Box
+                            styleSheet={{
+                                position: 'absolute',
+                                top: '-2.6rem',
+                                right: '2.6rem',
+
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                            }}
+                        >
+                            <ButtonSendSticker
+                                onStickerClick={(sticker) => {
+                                    handleNewMessage(`:sticker: ${sticker}`)
+                                }}
+                                style={{
+                                    backgroundColor: '#59bfff',
+
+                                    width: '30px',
+                                    height: '30px'
+                                }}
+                            />
+                            <FontAwesomeIcon icon={faPaperPlane}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    if (message != '') {
+                                        handleNewMessage(message);
+                                    }
+                                }
+                                }
+
+                                style={{
+                                    cursor: 'pointer',
+                                    color: '#59bfff',
+
+                                    width: '30px',
+                                    height: '30px'
+                                }}
+
+                            />
+                        </Box>
                         <TextField
                             value={message}
                             onChange={(event) => {
@@ -114,28 +190,10 @@ export default function ChatPage() {
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
                         />
-                        <FontAwesomeIcon icon={faRocket}
-                            onClick={(event) => {
-                                event.preventDefault();
-                                if (message != '') {
-                                    handleNewMessage(message);
-                                }
-                            }
-                            }
-
-                            style={{
-                                cursor: 'pointer',
-                                color: '#59bfff',
-                                width: '5%',
-                                height: '50%',
-                                marginTop: '6px'
-                            }}
-
-                        />
                     </Box>
                 </Box>
             </Box>
-        </Box>
+        </Box >
     )
 }
 
@@ -189,7 +247,7 @@ function MessageList(props) {
                             marginBottom: '12px',
 
                             hover: {
-                                backgroundColor: appConfig.theme.colors.neutrals[700],
+                                backgroundColor: 'rgb(41, 51, 61, 0.375)',
                             }
                         }}
                     >
@@ -234,6 +292,7 @@ function MessageList(props) {
                                 event.preventDefault();
                                 try {
                                     await supabase.from('messages').delete().eq('id', message.id)
+                                    props.setMessages(props.messages.filter((msg) => msg.id !== message.id))
                                 } catch (error) {
                                     console.log(error)
                                 }
@@ -244,7 +303,9 @@ function MessageList(props) {
                                 }}
                             />
                         </Box>
-                        {message.text}
+                        {message.text.startsWith(':sticker:') ?
+                            (<Image src={message.text.replace(':sticker:', '')} />)
+                            : message.text}
                     </Text>
                 )
             })}
