@@ -15,20 +15,14 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5v
 const SUPABASE_URL = 'https://ezptpsxxcksineiwjlhr.supabase.co'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-function realtimeInsert(setNewMessages) {
+function liveChat(setMessages) {
     return supabase
         .from('messages')
-        .on('INSERT', (newInsertMessage) => {
-            setNewMessages(newInsertMessage.new);
+        .on('INSERT', (newMessage) => {
+            setMessages(newMessage.new, 'INSERT');
         })
-        .subscribe();
-}
-
-function realtimeDelete(setNewMessages) {
-    return supabase
-        .from('messages')
-        .on('DELETE', (oldDeleteMessage) => {
-            setNewMessages(oldDeleteMessage.old);
+        .on('DELETE', (oldMessage) => {
+            setMessages(oldMessage.old, 'DELETE');
         })
         .subscribe();
 }
@@ -42,28 +36,25 @@ export default function ChatPage() {
     React.useEffect(() => {
         supabase.from('messages').select('*').order('id', { ascending: false }).then(({ data }) => {
             setMessages(data);
-            console.log('oi')
         })
 
-        const insertSubscription = realtimeInsert((newMesage) => {
-            setMessages((currentMessages) => {
-                return [
-                    newMesage,
-                    ...currentMessages,
-                ]
-            });
+        const subscription = liveChat((message, action) => {
+            if (action == 'INSERT') {
+                setMessages((currentMessages) => {
+                    return [
+                        message,
+                        ...currentMessages,
+                    ]
+                });
+            } else {
+                setMessages((currentMessages) => {
+                    return currentMessages.filter((msg) => msg.id !== message.id)
+                });
+            }
         });
 
-        /*const deleteSubscription = realtimeDelete((oldMessage) => {
-            setMessages((currentMessages) => {
-                return [
-                    currentMessages.filter((msg) => msg.id !== oldMessage.id)
-                ]
-            });
-        });*/
-
         return () => {
-            insertSubscription.unsubscribe();
+            subscription.unsubscribe();
         }
 
     }, [])
@@ -273,7 +264,7 @@ function MessageList(props) {
                                         transform: 'scale(1.25)',
                                     }
                                 }}
-                                src={`https://github.com/${message.user}.png`}
+                                src={`https://github.com/${message.user}.png` ? `https://github.com/${message.user}.png` : `https://avatarfiles.alphacoders.com/168/thumb-1920-168291.png`}
                             />
                             <Text tag="strong">
                                 {message.user}
@@ -292,7 +283,6 @@ function MessageList(props) {
                                 event.preventDefault();
                                 try {
                                     await supabase.from('messages').delete().eq('id', message.id)
-                                    props.setMessages(props.messages.filter((msg) => msg.id !== message.id))
                                 } catch (error) {
                                     console.log(error)
                                 }
