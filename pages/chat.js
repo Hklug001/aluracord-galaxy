@@ -121,7 +121,7 @@ export default function ChatPage() {
                             styleSheet={{
                                 position: 'absolute',
                                 top: '-2.6rem',
-                                right: '2.6rem',
+                                right: '1.6rem',
 
                                 display: 'flex',
                                 alignItems: 'center',
@@ -217,6 +217,7 @@ function MessageList(props) {
     return (
         <Box
             tag="ul"
+
             styleSheet={{
                 overflowY: 'scroll',
                 display: 'flex',
@@ -224,6 +225,17 @@ function MessageList(props) {
                 flex: 1,
                 color: appConfig.theme.colors.neutrals["000"],
                 marginBottom: '16px',
+
+                webkitScrollbarTrack: {
+                    backgroundColor: '#F4F4F4',
+                },
+                webkitScrollbar: {
+                    width: '6px',
+                    background: '#F4F4F4',
+                },
+                webkitScrollbarThumb: {
+                    background: '#444343',
+                }
             }}
         >
             {props.messages.map((message) => {
